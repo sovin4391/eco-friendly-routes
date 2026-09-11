@@ -1,0 +1,28 @@
+﻿# Secrets & Environment variables (CRITICAL: Never commit API keys)
+.env
+.env.local
+.env.*.local
+*.env
+backend/.env
+!*.example
+
+# Python virtual environment & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Node & Frontend build output
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+
+# OS & Editor generated files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
