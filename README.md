@@ -6,13 +6,13 @@ An AI chatbot with one strange rule: **It must never answer the user; it must on
 
 ## 1. Setting Up Your Google Gemini API Key
 
-QuestionBot uses Google's official Gemini API (`google-genai` SDK) to dynamically formulate questions using models like `gemini-2.5-flash` available on the free tier.
+QuestionBot uses Google's official Gemini API (`google-genai` SDK) to dynamically formulate questions using models like `gemini-3.6-flash` available on the free tier.
 
 1. Open `backend/.env` in your editor.
 2. Enter your Gemini API key:
    ```env
    GEMINI_API_KEY=AIzaSyYourActualGeminiKeyHere
-   GEMINI_MODEL=gemini-2.5-flash
+   GEMINI_MODEL=gemini-3.6-flash
    PORT=8000
    HOST=127.0.0.1
    ```
