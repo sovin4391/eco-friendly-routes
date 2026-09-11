@@ -1,10 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 import memory
+import gemini_client
 
-app = FastAPI(title="QuestionBot API", version="0.1.0")
+app = FastAPI(title="QuestionBot API (Gemini Edition)", version="0.3.0")
 
 # CORS setup: allows the React frontend on localhost:5173 to communicate with this backend
 origins = [
@@ -19,18 +20,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Phase 1 uses these canned questions. OpenAI integration will arrive in a future phase.
-CANNED_QUESTIONS = [
-    "Why do you need to know?",
-    "What made you curious about that?",
-    "If you already had the answer, what would you do next?",
-    "Who first made you wonder about this?",
-    "Why does that matter so much to you?",
-    "What would change if you never found out?",
-    "Why do you define your situation in those terms?",
-    "Where does that assumption come from?",
-]
 
 
 class ChatRequest(BaseModel):
@@ -67,8 +56,9 @@ def health_check():
 @app.post("/chat")
 def chat(request: ChatRequest):
     """
-    Receives user message, stores it in RAM memory, generates a canned question,
-    stores the question in memory, and returns the updated state.
+    Receives user message, queries Google Gemini with conversation history and strict QuestionBot prompt,
+    validates that the response is strictly a single question, stores the turn in RAM memory,
+    and returns the updated state.
     """
     text = request.message.strip()
     if not text:
@@ -77,11 +67,24 @@ def chat(request: ChatRequest):
     conv_id = memory.get_or_create(request.conversation_id)
     conv = memory.get(conv_id)
 
-    # Pick next canned question based on question count
-    question = CANNED_QUESTIONS[conv["question_count"] % len(CANNED_QUESTIONS)]
+    # Generate question using Gemini client with retry and validation
+    try:
+        bot_question = gemini_client.generate_question(conv["messages"], text)
+    except ValueError as ve:
+        # Cleanly informs user about missing or invalid GEMINI_API_KEY without raw crash
+        raise HTTPException(status_code=400, detail=str(ve))
+    except RuntimeError as re:
+        # Handles rate limits, quota, or network connectivity issues cleanly
+        raise HTTPException(status_code=503, detail=str(re))
+    except Exception as e:
+        # Catch-all protecting internal stack trace / secrets
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while communicating with Google Gemini. Please try again."
+        )
 
     # Record turn in RAM memory
-    updated_conv = memory.add_turn(conv_id, text, question)
+    updated_conv = memory.add_turn(conv_id, text, bot_question)
 
     return _serialize_response(conv_id, updated_conv)
 
