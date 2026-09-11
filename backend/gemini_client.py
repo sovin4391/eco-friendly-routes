@@ -7,6 +7,7 @@ from google.genai import types
 from google.genai.errors import APIError
 
 from prompts import SYSTEM_PROMPT, FALLBACK_QUESTION, RETRY_REMINDER
+from personalities import get_personality_instruction, validate_personality
 from validator import is_valid_question
 
 # Path to backend/.env
@@ -52,27 +53,32 @@ def get_client() -> genai.Client:
 def generate_question(
     history: list[dict],
     user_message: str,
+    personality: str = "NORMAL",
+    is_break_mode: bool = False,
     client: Optional[genai.Client] = None,
 ) -> str:
     """
     Generates a single relevant question using Google Gemini:
-    1. Builds conversation history (user + model turns).
-    2. Sends context + strict QuestionBot system instruction to Gemini.
+    1. Combines the core QuestionBot golden rule with the active personality and challenge instructions.
+    2. Builds conversation history (user + model turns) for multi-turn contextual continuity.
     3. Validates that the response is strictly a single question ending with '?'.
     4. If invalid, retries once with a corrective prompt.
     5. If the second attempt still fails, safely returns FALLBACK_QUESTION.
-
-    Allows passing an optional client instance for unit testing without live API keys.
     """
     if client is None:
         client = get_client()
 
     model = get_model_name()
+    validated_personality = validate_personality(personality)
+    personality_instruction = get_personality_instruction(validated_personality, is_break_mode)
+
+    # Compose full system prompt
+    full_system_prompt = f"{SYSTEM_PROMPT}\n\n{personality_instruction}"
 
     # Build conversation contents for Gemini
     contents: list[types.Content] = []
 
-    # Map previous conversation history turns
+    # Map previous conversation history turns for deep contextual awareness
     for msg in history:
         role = "user" if msg.get("role") == "user" else "model"
         content_text = msg.get("content", "")
@@ -92,20 +98,42 @@ def generate_question(
         )
     )
 
+    temp = 0.85 if validated_personality == "CHAOTIC" else 0.7
+
     config = types.GenerateContentConfig(
-        system_instruction=SYSTEM_PROMPT,
-        temperature=0.7,
+        system_instruction=full_system_prompt,
+        temperature=temp,
         max_output_tokens=500,
         thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL),
     )
 
+    # Candidate model pool: primary configured model first, followed by compatible fallback models on 429
+    model_candidates = [model]
+    for alt in ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]:
+        if alt not in model_candidates:
+            model_candidates.append(alt)
+
+    def _safe_generate(req_contents):
+        last_err = None
+        for candidate in model_candidates:
+            try:
+                return client.models.generate_content(
+                    model=candidate,
+                    contents=req_contents,
+                    config=config,
+                )
+            except APIError as api_err:
+                last_err = api_err
+                err_text = str(api_err)
+                if "429" in err_text or "RESOURCE_EXHAUSTED" in err_text:
+                    continue
+                raise
+        if last_err:
+            raise last_err
+
     try:
         # Attempt 1: Standard Generation
-        response = client.models.generate_content(
-            model=model,
-            contents=contents,
-            config=config,
-        )
+        response = _safe_generate(contents)
 
         reply = (response.text or "").strip().strip('"\'`')
 
@@ -127,11 +155,7 @@ def generate_question(
             )
         )
 
-        retry_response = client.models.generate_content(
-            model=model,
-            contents=retry_contents,
-            config=config,
-        )
+        retry_response = _safe_generate(retry_contents)
 
         retry_reply = (retry_response.text or "").strip().strip('"\'`')
 
@@ -149,7 +173,7 @@ def generate_question(
             )
         elif "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
             raise RuntimeError(
-                "Gemini quota/rate limit reached. Please verify that your Gemini API key has quota available."
+                "Gemini quota/rate limit reached across available models. Please verify that your Gemini API key has quota available."
             )
         else:
             raise RuntimeError(

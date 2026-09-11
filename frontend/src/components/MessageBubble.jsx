@@ -1,10 +1,14 @@
 import React from 'react';
 
-export default function MessageBubble({ message }) {
-  const isUser = message.role === 'user';
+export default function MessageBubble({ message, role, content, timestamp }) {
+  const actualRole = message?.role ?? role ?? 'assistant';
+  const actualContent = message?.content ?? content ?? '';
+  const actualTimestamp = message?.timestamp ?? timestamp;
 
-  const formattedTime = message.timestamp
-    ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const isUser = actualRole === 'user';
+
+  const formattedTime = actualTimestamp
+    ? new Date(actualTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : '';
 
   return (
@@ -34,7 +38,7 @@ export default function MessageBubble({ message }) {
             </span>
           )}
         </div>
-        <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        <p className="whitespace-pre-wrap break-words">{actualContent}</p>
       </div>
 
       {/* User Avatar */}

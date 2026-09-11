@@ -3,14 +3,16 @@ import re
 
 def is_valid_question(text: str) -> bool:
     """
-    Validates whether the AI-generated response is strictly a single question.
+    Strictly validates whether the AI-generated response is a single question.
 
     Criteria:
-    1. Must be non-empty.
+    1. Must be a non-empty string.
     2. Must end with a question mark (?).
-    3. Must not include preceding explanatory or factual sentences
-       (e.g., "Paris is the capital of France. Why do you need to know?").
-    4. Must have meaningful length (> 2 characters).
+    3. Must contain exactly ONE question mark (rejects multiple questions).
+    4. Must not include preceding declarative/factual sentences or answers
+       (e.g., "Paris is the capital. Why do you ask?").
+    5. Must not include newline-separated explanations or paragraphs.
+    6. Must have meaningful length (> 2 characters).
     """
     if not text or not isinstance(text, str):
         return False
@@ -27,16 +29,24 @@ def is_valid_question(text: str) -> bool:
     if len(cleaned) < 3:
         return False
 
-    # Disallow preceding declarative sentences before the question mark.
-    # E.g. "The answer is 42. What else do you want to know?" -> Invalid
-    preceding_text = cleaned[:-1]  # everything before the final ?
+    # Must contain exactly ONE question mark (rejects multiple questions)
+    if cleaned.count("?") > 1:
+        return False
+
+    # Disallow preceding declarative sentences ending with periods before the question mark.
+    # E.g. "Paris is the capital of France. Why do you need to know?" -> Invalid
+    preceding_text = cleaned[:-1].strip()  # text before final ?
     declarative_parts = [p.strip() for p in preceding_text.split(".") if p.strip()]
     if len(declarative_parts) > 1:
         return False
 
-    # Check for newline-separated paragraphs/sentences
+    # Check for newline-separated paragraphs or statements
     lines = [line.strip() for line in cleaned.splitlines() if line.strip()]
     if len(lines) > 1:
+        return False
+
+    # Disallow exclamation marks, colons, or semicolons before the question (e.g. "Hello! Why do you ask?", "Here is my reply: why?")
+    if any(ch in preceding_text for ch in ("!", ":", ";")):
         return False
 
     return True
