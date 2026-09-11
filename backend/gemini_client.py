@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Optional
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -8,17 +9,21 @@ from google.genai.errors import APIError
 from prompts import SYSTEM_PROMPT, FALLBACK_QUESTION, RETRY_REMINDER
 from validator import is_valid_question
 
-# Ensure environment variables are loaded directly from backend/.env
+# Path to backend/.env
 env_path = Path(__file__).resolve().parent / ".env"
-load_dotenv(dotenv_path=env_path)
 
 
 def get_api_key() -> str:
     """
     Retrieves the Gemini API key strictly from backend/.env or environment.
+    Always reloads backend/.env with override=True so edits are picked up immediately.
     Raises a clean error if missing or placeholder.
     """
-    key = os.getenv("GEMINI_API_KEY", "").strip()
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path, override=True)
+
+    key = os.getenv("GEMINI_API_KEY", "").strip().strip('"\'')
+
     if not key or key == "your_gemini_api_key_here":
         raise ValueError(
             "Gemini API key is missing. Please add your key to backend/.env (GEMINI_API_KEY=...) to enable AI responses."
@@ -29,9 +34,11 @@ def get_api_key() -> str:
 def get_model_name() -> str:
     """
     Returns the configured Gemini model name.
-    Defaults to gemini-2.5-flash (fast, economical, free-tier friendly).
+    Defaults to gemini-3.6-flash (current fast, economical, free-tier model).
     """
-    return os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path, override=True)
+    return os.getenv("GEMINI_MODEL", "gemini-3.6-flash").strip().strip('"\'')
 
 
 def get_client() -> genai.Client:
@@ -42,7 +49,11 @@ def get_client() -> genai.Client:
     return genai.Client(api_key=key)
 
 
-def generate_question(history: list[dict], user_message: str) -> str:
+def generate_question(
+    history: list[dict],
+    user_message: str,
+    client: Optional[genai.Client] = None,
+) -> str:
     """
     Generates a single relevant question using Google Gemini:
     1. Builds conversation history (user + model turns).
@@ -50,8 +61,12 @@ def generate_question(history: list[dict], user_message: str) -> str:
     3. Validates that the response is strictly a single question ending with '?'.
     4. If invalid, retries once with a corrective prompt.
     5. If the second attempt still fails, safely returns FALLBACK_QUESTION.
+
+    Allows passing an optional client instance for unit testing without live API keys.
     """
-    client = get_client()
+    if client is None:
+        client = get_client()
+
     model = get_model_name()
 
     # Build conversation contents for Gemini
@@ -59,7 +74,6 @@ def generate_question(history: list[dict], user_message: str) -> str:
 
     # Map previous conversation history turns
     for msg in history:
-        # In Gemini SDK, roles are 'user' and 'model'
         role = "user" if msg.get("role") == "user" else "model"
         content_text = msg.get("content", "")
         if content_text:
@@ -81,7 +95,8 @@ def generate_question(history: list[dict], user_message: str) -> str:
     config = types.GenerateContentConfig(
         system_instruction=SYSTEM_PROMPT,
         temperature=0.7,
-        max_output_tokens=150,
+        max_output_tokens=500,
+        thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL),
     )
 
     try:
