@@ -1,0 +1,13 @@
+# Computer Vision Dependencies for Eco-Friendly Routes
+# Module:
+# - Module C: RDD2022 Road Damage & Pothole Detection (Ultralytics YOLOv8)
+#
+# NOTE: The core Eco-Friendly Routes application (FastAPI, Tabular ML, SQLite, Leaflet UI)
+# runs completely independently without these packages.
+# Keep these dependencies optional to ensure lightweight execution and avoid system conflicts.
+
+opencv-python-headless>=4.8.0
+pillow>=10.0.0
+torch>=2.0.0
+torchvision>=0.15.0
+ultralytics>=8.0.0

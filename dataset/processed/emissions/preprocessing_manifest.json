@@ -1,0 +1,61 @@
+{
+  "imputation": {},
+  "outliers_logged": {
+    "Engine Size(L)": {
+      "q25": 2.0,
+      "q75": 3.7,
+      "iqr": 1.7,
+      "lower_bound": -0.55,
+      "upper_bound": 6.25,
+      "outlier_count": 84,
+      "outlier_percentage": 1.63
+    },
+    "Cylinders": {
+      "q25": 4.0,
+      "q75": 6.0,
+      "iqr": 2.0,
+      "lower_bound": 1.0,
+      "upper_bound": 9.0,
+      "outlier_count": 122,
+      "outlier_percentage": 2.36
+    },
+    "Fuel Consumption Comb (L/100 km)": {
+      "q25": 8.9,
+      "q75": 12.6,
+      "iqr": 3.7,
+      "lower_bound": 3.35,
+      "upper_bound": 18.15,
+      "outlier_count": 102,
+      "outlier_percentage": 1.97
+    },
+    "CO2 Emissions(g/km)": {
+      "q25": 208.0,
+      "q75": 288.0,
+      "iqr": 80.0,
+      "lower_bound": 88.0,
+      "upper_bound": 408.0,
+      "outlier_count": 51,
+      "outlier_percentage": 0.99
+    }
+  },
+  "splits": {
+    "total_samples": 7385,
+    "train_samples": 5169,
+    "val_samples": 1108,
+    "test_samples": 1108,
+    "random_state": 42
+  },
+  "feature_columns": [
+    "Make",
+    "Model",
+    "Vehicle Class",
+    "Engine Size(L)",
+    "Cylinders",
+    "Transmission",
+    "Fuel Type",
+    "Fuel Consumption Comb (L/100 km)"
+  ],
+  "target_column": "CO2 Emissions(g/km)",
+  "exact_duplicates": 1314,
+  "dropped_target_null_rows": 0
+}

@@ -1,0 +1,49 @@
+{
+  "status": "COMPLETED",
+  "dataset_root": "C:\\Users\\Sovin\\Desktop\\nex2\\dataset\\raw\\rdd2022\\India",
+  "file_counts": {
+    "train_annotations_xml": 7706,
+    "train_images": 7706,
+    "test_images": 1959,
+    "total_images": 9665
+  },
+  "image_annotation_correspondence": {
+    "matched_pairs": 7706,
+    "orphan_xmls_count": 0,
+    "orphan_images_count": 0,
+    "has_perfect_correspondence": true
+  },
+  "bounding_boxes": {
+    "total_bounding_boxes": 8203,
+    "average_boxes_per_image": 1.06,
+    "images_with_zero_damage_objects": 3921,
+    "invalid_or_clipped_boxes_count": 0
+  },
+  "class_distribution": {
+    "D40": 3187,
+    "D44": 1062,
+    "D00": 1555,
+    "D20": 2021,
+    "D01": 179,
+    "D11": 45,
+    "D10": 68,
+    "D50": 28,
+    "D43": 57,
+    "D0w0": 1
+  },
+  "known_class_mapping": {
+    "D00": "Longitudinal Crack",
+    "D10": "Transverse Crack",
+    "D20": "Alligator Crack",
+    "D40": "Pothole"
+  },
+  "image_dimensions_frequency": {
+    "720x720": 7706
+  },
+  "data_quality_issues": {
+    "parsing_errors_count": 0,
+    "sample_corrupted_images_count": 0,
+    "details_parsing_errors": [],
+    "details_invalid_boxes": []
+  }
+}

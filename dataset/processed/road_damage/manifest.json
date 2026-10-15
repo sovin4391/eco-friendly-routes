@@ -1,0 +1,41 @@
+{
+  "status": "COMPLETED",
+  "random_seed": 42,
+  "split_ratios": {
+    "train": 0.7,
+    "val": 0.15,
+    "test": 0.15
+  },
+  "counts": {
+    "total_samples": 7706,
+    "train": 5392,
+    "val": 1154,
+    "test": 1160
+  },
+  "classes": {
+    "0": "D00 (Longitudinal Crack)",
+    "1": "D10 (Transverse Crack)",
+    "2": "D20 (Alligator Crack)",
+    "3": "D40 (Pothole)"
+  },
+  "class_instances_per_split": {
+    "train": {
+      "D00: Longitudinal Crack": 1092,
+      "D10: Transverse Crack": 47,
+      "D20: Alligator Crack": 1421,
+      "D40: Pothole": 2173
+    },
+    "val": {
+      "D00: Longitudinal Crack": 224,
+      "D10: Transverse Crack": 11,
+      "D20: Alligator Crack": 298,
+      "D40: Pothole": 515
+    },
+    "test": {
+      "D00: Longitudinal Crack": 239,
+      "D10: Transverse Crack": 10,
+      "D20: Alligator Crack": 302,
+      "D40: Pothole": 499
+    }
+  }
+}

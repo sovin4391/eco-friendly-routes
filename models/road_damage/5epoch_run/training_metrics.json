@@ -1,0 +1,72 @@
+{
+  "model_architecture": "yolov8n.pt",
+  "epochs_trained": 5,
+  "image_size": 512,
+  "batch_size": 8,
+  "compute_device": "cpu",
+  "dataset_fraction": 1.0,
+  "warmup_epochs": 1,
+  "random_seed": 42,
+  "training_duration_seconds": 5756.1,
+  "validation_metrics": {
+    "mAP50": 0.1288,
+    "mAP50_95": 0.0533,
+    "precision": 0.177,
+    "recall": 0.1783
+  },
+  "test_metrics": {
+    "mAP50": 0.1301,
+    "mAP50_95": 0.054,
+    "precision": 0.1965,
+    "recall": 0.1639
+  },
+  "per_class_mAP50": {
+    "Class_0": 0.023,
+    "Class_1": 0.0,
+    "Class_2": 0.1401,
+    "Class_3": 0.0529
+  },
+  "classes": {
+    "0": "D00: Longitudinal Crack",
+    "1": "D10: Transverse Crack",
+    "2": "D20: Alligator Crack",
+    "3": "D40: Pothole"
+  },
+  "confusion_matrix": [
+    [
+      154.0,
+      2.0,
+      40.0,
+      33.0,
+      26884.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      19.0,
+      1.0,
+      160.0,
+      48.0,
+      19719.0
+    ],
+    [
+      27.0,
+      2.0,
+      93.0,
+      360.0,
+      36980.0
+    ],
+    [
+      39.0,
+      5.0,
+      9.0,
+      58.0,
+      0.0
+    ]
+  ]
+}

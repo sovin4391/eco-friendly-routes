@@ -1,10 +1,10 @@
-﻿# Secrets & Environment variables (CRITICAL: Never commit API keys)
+# Secrets & Environment variables (CRITICAL: Never commit API keys or secret credentials)
 .env
 .env.local
 .env.*.local
 *.env
 backend/.env
-!*.example
+!*.env.example
 
 # Python virtual environment & cache
 __pycache__/
@@ -13,6 +13,11 @@ __pycache__/
 .venv/
 venv/
 env/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
 
 # Node & Frontend build output
 node_modules/
@@ -21,8 +26,75 @@ dist-ssr/
 .vite/
 *.local
 
+# Machine Learning Models & Serialized Artifacts (Tracked via Git LFS in .gitattributes)
+# Intermediate and redundant training runs are ignored
+runs/
+yolov8*.pt
+models/**/last.pt
+models/**/epoch*.pt
+models/**/results.csv
+models/road_damage/corrected_run/
+!models/.gitkeep
+!models/README.md
+!models/model_metadata.json
+!models/emissions_model.joblib
+!models/road_damage/best.pt
+!models/road_damage/training_metrics.json
+!models/road_damage/class_mapping.json
+!models/road_damage/baseline/best.pt
+!models/road_damage/baseline/training_metrics.json
+!models/road_damage/baseline/class_mapping.json
+!models/road_damage/baseline/README.md
+!models/road_damage/5epoch_run/best.pt
+!models/road_damage/5epoch_run/training_metrics.json
+!models/road_damage/5epoch_run/class_mapping.json
+
+# Datasets & Heavy Computer Vision Archives
+# 1. Official CO2 Emissions Canada (fully tracked for immediate reproducibility)
+!dataset/raw/emissions/**
+!dataset/processed/emissions/**
+
+# 2. RDD2022 India Heavy Data (502 MB archive + 32,000 raw/processed images excluded to comply with GitHub limits)
+# Regenerable via: python ml/download_rdd2022.py && python ml/preprocess_rdd2022.py
+dataset/raw/rdd2022/**/*.zip
+dataset/raw/rdd2022/**/*.tar*
+dataset/raw/rdd2022/India/
+dataset/processed/road_damage/images/train/
+dataset/processed/road_damage/images/val/
+dataset/processed/road_damage/images/test/*.jpg
+!dataset/processed/road_damage/images/test/India_000168.jpg
+!dataset/processed/road_damage/images/test/India_000174.jpg
+!dataset/processed/road_damage/images/test/India_000241.jpg
+dataset/processed/road_damage/labels/
+
+
+# Whitelist metadata and verified sample test images for instant UI demo
+!dataset/processed/road_damage/dataset.yaml
+!dataset/processed/road_damage/*.json
+!dataset/raw/rdd2022/*.json
+!dataset/raw/rdd2022/*.txt
+!dataset/raw/rdd2022/*.pbtxt
+!dataset/processed/road_damage/images/test/India_000168.jpg
+!dataset/processed/road_damage/images/test/India_000174.jpg
+!dataset/processed/road_damage/images/test/India_000241.jpg
+
+# Allow documentation, plans, and gitkeep markers across all dataset folders
+!dataset/**/.gitkeep
+!dataset/**/*.md
+!dataset/**/DATASET_PLAN.md
+
+# Agent IDE and system customizations
+.agents/
+
+
+# SQLite & Local Databases
+*.db
+*.sqlite
+*.sqlite3
+
 # OS & Editor generated files
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+*.swp

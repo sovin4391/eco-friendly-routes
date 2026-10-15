@@ -1,308 +1,325 @@
-import React, { useState } from 'react';
-import Sidebar from './components/Sidebar';
-import ChatWindow from './components/ChatWindow';
-import Composer from './components/Composer';
-import AchievementsModal from './components/AchievementsModal';
-import StatsModal from './components/StatsModal';
-
-const BACKEND_URL = 'http://127.0.0.1:8000';
-
-const INITIAL_ACHIEVEMENTS = [
-  { id: 'FIRST_QUESTION', title: 'FIRST QUESTION', description: 'Your first step into questioning.', icon: '🌱', unlocked: false },
-  { id: 'FIVE_DEEP', title: 'FIVE DEEP', description: 'Five levels. Zero answers.', icon: '🧭', unlocked: false },
-  { id: 'EXISTENTIAL_CRISIS', title: 'EXISTENTIAL CRISIS', description: 'Reached depth 10.', icon: '💀', unlocked: false },
-  { id: 'BOT_BREAKER', title: 'BOT BREAKER', description: 'Attempted to force QuestionBot to answer.', icon: '⚔️', unlocked: false },
-  { id: 'QUESTION_ADDICT', title: 'QUESTION ADDICT', description: 'Reached depth 15.', icon: '🌀', unlocked: false },
-];
+import React, { useState, useEffect } from "react";
+import Navbar from "./components/Navbar";
+import RouteForm from "./components/RouteForm";
+import MapView from "./components/MapView";
+import RouteCard from "./components/RouteCard";
+import RouteComparison from "./components/RouteComparison";
+import EnvironmentalImpact from "./components/EnvironmentalImpact";
+import ProjectStatusCard from "./components/ProjectStatusCard";
+import EmissionsCalculatorCard from "./components/EmissionsCalculatorCard";
+import RoadDamageCard from "./components/RoadDamageCard";
+import { checkBackendHealth, fetchRouteRecommendations, getExplicitDemonstrationRoutes } from "./services/api";
+import { Sparkles, Route, Info, AlertCircle } from "lucide-react";
 
 export default function App() {
-  const [conversationId, setConversationId] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [questionCount, setQuestionCount] = useState(0);
-  const [depth, setDepth] = useState(0);
-  const [depthTitle, setDepthTitle] = useState('UNINITIATED');
-  const [personality, setPersonality] = useState('NORMAL');
-  const [isBreakMode, setIsBreakMode] = useState(false);
-  const [breakAttempts, setBreakAttempts] = useState(0);
-  const [questionsSurvived, setQuestionsSurvived] = useState(0);
-  const [achievements, setAchievements] = useState(INITIAL_ACHIEVEMENTS);
-  const [stats, setStats] = useState({
-    questions_asked: 0,
-    questions_returned: 0,
-    answers_received: 0,
-    max_depth: 0,
-    depth_title: 'UNINITIATED',
-    personality_used: 'NORMAL',
-    break_attempts: 0,
-    questions_survived: 0,
-    depth_message: 'You barely scratched the surface.',
+  const [backendStatus, setBackendStatus] = useState({
+    loading: true,
+    connected: false,
+    data: null,
   });
-  const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
-  const [isStatsOpen, setIsStatsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(null);
-  const [toastMessage, setToastMessage] = useState(null);
 
-  const showToast = (msg, duration = 3500) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), duration);
-  };
+  const [routes, setRoutes] = useState([]);
+  const [selectedRouteId, setSelectedRouteId] = useState(null);
+  const [savings, setSavings] = useState(null);
+  const [isDemonstration, setIsDemonstration] = useState(false);
+  const [vehicleType, setVehicleType] = useState("gasoline");
+  const [loading, setLoading] = useState(false);
+  const [routeNotice, setRouteNotice] = useState(null);
+  const [limitationsNote, setLimitationsNote] = useState(null);
+  const [searchError, setSearchError] = useState(null);
+  const [searchParams, setSearchParams] = useState({
+    origin: "Connaught Place, Central City",
+    destination: "Cyber Hub, Tech Corridor",
+  });
 
-  const handleSelectPersonality = (newPersonality) => {
-    setPersonality(newPersonality);
-    showToast(`Mode switched to ${newPersonality}`);
-  };
-
-  const handleToggleBreakMode = () => {
-    const nextMode = !isBreakMode;
-    setIsBreakMode(nextMode);
-    if (nextMode) {
-      showToast('🔥 TRY TO BREAK THE BOT activated! "Your mission: make me answer."');
-    } else {
-      showToast('Break mode deactivated. Back to standard questioning.');
+  // Explicit demo corridor loader (Requirement 7)
+  const handleLoadDemo = () => {
+    setLoading(true);
+    setSearchError(null);
+    const demoData = getExplicitDemonstrationRoutes(vehicleType, "ECO");
+    setRoutes(demoData.routes);
+    setSavings(demoData.savings);
+    setIsDemonstration(true);
+    setRouteNotice(demoData.notice);
+    setLimitationsNote(demoData.limitationsNote);
+    setSearchParams({
+      origin: demoData.origin,
+      destination: demoData.destination,
+    });
+    if (demoData.routes.length > 0) {
+      setSelectedRouteId(demoData.routes[0].id);
     }
+    setLoading(false);
   };
 
-  const handleSendMessage = async (text) => {
-    if (!text.trim() || isLoading) return;
+  // Initial load: Check backend health and load initial routes
+  useEffect(() => {
+    async function init() {
+      // 1. Check live FastAPI backend health
+      const healthRes = await checkBackendHealth();
+      setBackendStatus({
+        loading: false,
+        connected: healthRes.connected,
+        data: healthRes.data,
+      });
 
-    setErrorMessage(null);
+      // 2. Load initial route recommendations
+      setLoading(true);
+      const res = await fetchRouteRecommendations({
+        origin: searchParams.origin,
+        destination: searchParams.destination,
+        vehicleType: "gasoline",
+        travelMode: "ECO",
+      });
 
-    // Optimistically add user's message to UI for instant feedback
-    const optimisticUserMsg = {
-      id: `temp-${Date.now()}`,
-      role: 'user',
-      content: text,
-      timestamp: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, optimisticUserMsg]);
-    setIsLoading(true);
+      if (res.success && res.routes && res.routes.length > 0) {
+        setRoutes(res.routes);
+        setSavings(res.savings || null);
+        setIsDemonstration(false);
+        setRouteNotice(res.notice || null);
+        setLimitationsNote(res.limitationsNote || null);
+        const rec = res.routes.find((r) => r.isRecommended) || res.routes[0];
+        setSelectedRouteId(rec.id);
+      } else {
+        // If initial backend call is unavailable on startup, explicitly load demo
+        handleLoadDemo();
+      }
+      setLoading(false);
+    }
+
+    init();
+
+    // Periodic health ping
+    const interval = setInterval(async () => {
+      const healthRes = await checkBackendHealth();
+      setBackendStatus({
+        loading: false,
+        connected: healthRes.connected,
+        data: healthRes.data,
+      });
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Handle route search submissions
+  const handleRouteSearch = async (formValues) => {
+    setLoading(true);
+    setSearchError(null);
+    setVehicleType(formValues.vehicleType);
+    setSearchParams({
+      origin: formValues.origin,
+      destination: formValues.destination,
+    });
 
     try {
-      const response = await fetch(`${BACKEND_URL}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conversation_id: conversationId,
-          message: text,
-          personality: personality,
-          is_break_mode: isBreakMode,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Server responded with status ${response.status}`);
-      }
-
-      const data = await response.json();
-      setConversationId(data.conversation_id);
-      setMessages(data.messages || []);
-      setQuestionCount(data.question_count || 0);
-      setDepth(data.depth || 0);
-      if (data.depth_title) {
-        setDepthTitle(data.depth_title);
-      }
-      if (typeof data.break_attempts === 'number') {
-        setBreakAttempts(data.break_attempts);
-      }
-      if (typeof data.questions_survived === 'number') {
-        setQuestionsSurvived(data.questions_survived);
-      }
-      if (data.achievements) {
-        setAchievements(data.achievements);
-      }
-      if (data.stats) {
-        setStats(data.stats);
-      }
-
-      // Check for newly unlocked achievements
-      if (data.new_achievements && data.new_achievements.length > 0) {
-        const ach = data.new_achievements[0];
-        showToast(`🏆 UNLOCKED: ${ach.title} — "${ach.description}"`, 4500);
+      const res = await fetchRouteRecommendations(formValues);
+      if (res.success && res.routes && res.routes.length > 0) {
+        setRoutes(res.routes);
+        setSavings(res.savings || null);
+        setIsDemonstration(false);
+        setRouteNotice(res.notice || null);
+        setLimitationsNote(res.limitationsNote || null);
+        setSearchError(null);
+        const rec = res.routes.find((r) => r.isRecommended) || res.routes[0];
+        setSelectedRouteId(rec.id);
+      } else {
+        // Clear all old route results when request fails (Requirement 6)
+        setRoutes([]);
+        setSavings(null);
+        setSelectedRouteId(null);
+        setRouteNotice(null);
+        setIsDemonstration(false);
+        setSearchError(res.error || "Route could not be calculated for the given endpoints.");
       }
     } catch (err) {
-      console.error('Chat error:', err);
-      setErrorMessage(
-        `Failed to reach backend (${err.message}). Is the FastAPI server running on http://127.0.0.1:8000?`
-      );
-      // Remove optimistic message if server request failed
-      setMessages((prev) => prev.filter((m) => m.id !== optimisticUserMsg.id));
+      setRoutes([]);
+      setSavings(null);
+      setSelectedRouteId(null);
+      setRouteNotice(null);
+      setIsDemonstration(false);
+      setSearchError(err.message || "An unexpected error occurred while calculating routes.");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleReset = async () => {
-    if (isResetting) return;
-    setErrorMessage(null);
-
-    if (!conversationId) {
-      setMessages([]);
-      setQuestionCount(0);
-      setDepth(0);
-      setDepthTitle('UNINITIATED');
-      setBreakAttempts(0);
-      setQuestionsSurvived(0);
-      setAchievements(INITIAL_ACHIEVEMENTS);
-      setStats({
-        questions_asked: 0,
-        questions_returned: 0,
-        answers_received: 0,
-        max_depth: 0,
-        depth_title: 'UNINITIATED',
-        personality_used: 'NORMAL',
-        break_attempts: 0,
-        questions_survived: 0,
-        depth_message: 'You barely scratched the surface.',
-      });
-      showToast('Conversation reset.');
-      return;
-    }
-
-    setIsResetting(true);
-    try {
-      const response = await fetch(`${BACKEND_URL}/reset`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversation_id: conversationId }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Reset failed with status ${response.status}`);
-      }
-
-      const data = await response.json();
-      setMessages(data.messages || []);
-      setQuestionCount(data.question_count || 0);
-      setDepth(data.depth || 0);
-      setDepthTitle('UNINITIATED');
-      setBreakAttempts(data.break_attempts || 0);
-      setQuestionsSurvived(data.questions_survived || 0);
-      setAchievements(INITIAL_ACHIEVEMENTS);
-      if (data.stats) {
-        setStats(data.stats);
-      }
-      showToast('Conversation & counters reset.');
-    } catch (err) {
-      console.error('Reset error:', err);
-      setMessages([]);
-      setQuestionCount(0);
-      setDepth(0);
-      setDepthTitle('UNINITIATED');
-      setBreakAttempts(0);
-      setQuestionsSurvived(0);
-      setAchievements(INITIAL_ACHIEVEMENTS);
-      setErrorMessage(`Reset warning: ${err.message}`);
-    } finally {
-      setIsResetting(false);
-    }
-  };
-
-  const unlockedAchievementsCount = (achievements || []).filter((a) => a?.unlocked).length;
+  const selectedRoute = routes.find((r) => r.id === selectedRouteId) || routes[0];
 
   return (
-    <div className="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden selection:bg-indigo-500 selection:text-white">
-      {/* Decorative ambient background glows */}
-      <div className="fixed inset-0 pointer-events-none flex items-center justify-center">
-        <div
-          className={`w-[600px] h-[600px] blur-[140px] rounded-full transition-colors duration-700 ${
-            isBreakMode ? 'bg-rose-600/10' : 'bg-indigo-600/5'
-          }`}
-        />
-        <div
-          className={`w-[400px] h-[400px] blur-[120px] rounded-full translate-x-32 -translate-y-20 transition-colors duration-700 ${
-            isBreakMode ? 'bg-amber-600/10' : 'bg-violet-600/5'
-          }`}
-        />
-      </div>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950">
+      <Navbar backendStatus={backendStatus} />
 
-      <div className="relative z-10 flex-1 flex flex-col h-full max-w-5xl w-full mx-auto sm:my-2 sm:border sm:border-slate-800/80 sm:rounded-2xl bg-slate-950/70 backdrop-blur-xl shadow-2xl overflow-hidden">
-        {/* Header, Depth Experience, Personality Cards, Achievements & Stats Buttons */}
-        <Sidebar
-          personality={personality}
-          onSelectPersonality={handleSelectPersonality}
-          isBreakMode={isBreakMode}
-          onToggleBreakMode={handleToggleBreakMode}
-          questionCount={questionCount}
-          depth={depth}
-          depthTitle={depthTitle}
-          breakAttempts={breakAttempts}
-          questionsSurvived={questionsSurvived}
-          unlockedAchievementsCount={unlockedAchievementsCount}
-          totalAchievementsCount={(achievements || []).length || 5}
-          onOpenAchievements={() => setIsAchievementsOpen(true)}
-          onOpenStats={() => setIsStatsOpen(true)}
-          onReset={handleReset}
-          isResetting={isResetting}
-        />
-
-        {/* Transient toast notifications */}
-        {toastMessage && (
-          <div className="px-4 py-2 bg-gradient-to-r from-indigo-950 via-purple-950 to-slate-900 border-b border-indigo-500/40 text-indigo-200 text-xs flex items-center justify-between transition-all shadow-md">
-            <div className="flex items-center gap-2">
-              <span className="text-amber-400 font-bold">✨</span>
-              <span>{toastMessage}</span>
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Project Header Banner */}
+        <div className="bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+          <div className="relative z-10 max-w-3xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">
+              <Sparkles className="w-3.5 h-3.5" />
+              Machine Learning Capstone Project &bull; PBL Final Evaluation
             </div>
-            <button
-              onClick={() => setToastMessage(null)}
-              className="text-slate-400 hover:text-white cursor-pointer px-1"
-            >
-              ✕
-            </button>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+              Eco-Friendly Routes
+            </h2>
+            <p className="text-sm sm:text-base text-slate-300 mt-2 leading-relaxed">
+              Intelligent multi-route optimization comparing candidate paths and evaluating greenhouse gas emissions (CO₂ grams) and energy consumption. Prioritize planetary sustainability alongside travel time efficiency.
+            </p>
           </div>
+
+          <div className="relative z-10 flex flex-col sm:flex-row md:flex-col gap-2 shrink-0">
+            <div className="bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-3 text-xs">
+              <span className="text-slate-400 block text-[10px] uppercase font-semibold">Active Corridor</span>
+              <span className="text-white font-bold text-sm truncate max-w-[220px] block mt-0.5">
+                {searchParams.origin}
+              </span>
+              <span className="text-emerald-400 block text-[10px] font-mono mt-0.5">
+                &darr; {searchParams.destination}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* System Architecture & Review Status */}
+        <ProjectStatusCard
+          backendData={backendStatus.data}
+          isDemonstration={isDemonstration}
+        />
+
+        {/* Live Scikit-Learn Vehicle CO2 Estimator (Real ML Pipeline Inference) */}
+        <div id="calculator">
+          <EmissionsCalculatorCard
+            selectedRouteDistance={selectedRoute?.distanceKm || 25.0}
+            activeVehicleType={vehicleType}
+          />
+        </div>
+
+        {/* Main Interactive Workspace: Search & Map */}
+        <div id="planner" className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left Column: Form & Route Cards */}
+          <div className="lg:col-span-5 space-y-6">
+
+            <RouteForm
+              onSubmit={handleRouteSearch}
+              loading={loading}
+              initialValues={searchParams}
+              onLoadDemo={handleLoadDemo}
+            />
+
+            {/* Search Validation & Routing Error Alert Banner */}
+            {searchError && (
+              <div className="p-4 rounded-2xl bg-rose-950/40 border border-rose-500/50 text-xs text-rose-200 flex items-start gap-3 shadow-lg">
+                <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <span className="font-bold text-rose-300 uppercase tracking-wider text-[11px] block">
+                    Location & Routing Validation Error
+                  </span>
+                  <p className="leading-relaxed">{searchError}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Scientific Estimation Methodology Notice */}
+            <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 space-y-1 shadow-md">
+              <div className="flex items-center gap-1.5 font-semibold text-emerald-400 text-[11px] uppercase tracking-wider">
+                <Info className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                Estimation Methodology
+              </div>
+              <p className="text-slate-400 text-xs leading-relaxed">
+                {limitationsNote || "Route emissions represent certified direct tailpipe CO₂ (predicted rate g/km × distance km). Real-time traffic congestion, signal wait delays, and elevation gradients are unverified and excluded."}
+              </p>
+            </div>
+
+            {/* Routing Engine Notice / Status */}
+            {routeNotice && (
+              <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-400 flex items-start gap-2 shadow">
+                <Info className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <p className="leading-relaxed">{routeNotice}</p>
+              </div>
+            )}
+
+            {/* Candidate Route Cards List */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Route className="w-4 h-4 text-emerald-400" />
+                  Candidate Route Results ({routes.length})
+                </h3>
+                <span className="text-[11px] text-slate-400">Click card to highlight</span>
+              </div>
+
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 animate-pulse h-36"></div>
+                  ))}
+                </div>
+              ) : routes.length > 0 ? (
+                <div className="space-y-3">
+                  {routes.map((route) => (
+                    <RouteCard
+                      key={route.id}
+                      route={route}
+                      isSelected={route.id === selectedRouteId}
+                      onSelect={(id) => setSelectedRouteId(id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 text-center text-xs text-slate-400 space-y-1.5">
+                  <p className="font-semibold text-slate-300">No active route results.</p>
+                  <p className="text-[11px] text-slate-500">
+                    {searchError
+                      ? "Previous route results were cleared due to validation error. Correct the endpoints above and try again."
+                      : "Enter valid source and destination locations above to evaluate eco-friendly routes."}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: Interactive Leaflet Map */}
+          <div className="lg:col-span-7 space-y-6">
+            <MapView
+              routes={routes}
+              selectedRouteId={selectedRouteId}
+              onSelectRoute={(id) => setSelectedRouteId(id)}
+            />
+          </div>
+        </div>
+
+        {/* Environmental Impact Savings Section */}
+        {routes.length > 0 && (
+          <EnvironmentalImpact
+            savings={savings}
+            vehicleType={vehicleType}
+          />
         )}
 
-        {/* Error notification banner */}
-        {errorMessage && (
-          <div className="px-4 py-2.5 bg-rose-500/10 border-b border-rose-500/30 text-rose-300 text-xs flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-rose-400 font-bold">⚠️</span>
-              <span>{errorMessage}</span>
-            </div>
-            <button
-              onClick={() => setErrorMessage(null)}
-              className="text-rose-400 hover:text-white font-bold text-sm px-1 cursor-pointer"
-            >
-              ✕
-            </button>
-          </div>
+        {/* Multi-Route Side-by-Side Comparison Matrix */}
+        {routes.length > 0 && (
+          <RouteComparison
+            routes={routes}
+            selectedRouteId={selectedRouteId}
+            onSelectRoute={(id) => setSelectedRouteId(id)}
+          />
         )}
 
-        {/* Conversation Area with Hackathon Empty State & Break Game Banner */}
-        <ChatWindow
-          messages={messages}
-          isLoading={isLoading}
-          personality={personality}
-          isBreakMode={isBreakMode}
-          breakAttempts={breakAttempts}
-          questionsSurvived={questionsSurvived}
-          onPromptClick={handleSendMessage}
-        />
+        {/* Module C: Road Damage & Pothole Vision Analysis */}
+        <RoadDamageCard />
+      </main>
 
-        {/* Message Composer */}
-        <Composer
-          onSend={handleSendMessage}
-          isLoading={isLoading}
-          isBreakMode={isBreakMode}
-        />
-      </div>
-
-      {/* Feature 4: Achievements Modal */}
-      <AchievementsModal
-        isOpen={isAchievementsOpen}
-        onClose={() => setIsAchievementsOpen(false)}
-        achievements={achievements}
-      />
-
-      {/* Feature 5: Stats / Session Results Modal */}
-      <StatsModal
-        isOpen={isStatsOpen}
-        onClose={() => setIsStatsOpen(false)}
-        stats={stats}
-        depthTitle={depthTitle}
-      />
+      {/* Footer */}
+      <footer className="border-t border-slate-800/80 bg-slate-950 py-6 mt-12 text-center text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p>
+            Eco-Friendly Routes &bull; Machine Learning PBL Capstone 2026 &bull; Final Submission
+          </p>
+          <p className="text-slate-600">
+            Powered by React, Tailwind CSS, Leaflet, FastAPI, Scikit-Learn & YOLOv8
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
+

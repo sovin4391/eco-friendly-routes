@@ -1,0 +1,94 @@
+{
+  "shape": {
+    "rows": 7385,
+    "columns": 9
+  },
+  "columns": {
+    "Make": {
+      "dtype": "str",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_values": 42
+    },
+    "Model": {
+      "dtype": "str",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_values": 2053
+    },
+    "Vehicle Class": {
+      "dtype": "str",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_values": 16
+    },
+    "Engine Size(L)": {
+      "dtype": "float64",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_values": 51
+    },
+    "Cylinders": {
+      "dtype": "int64",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_values": 8
+    },
+    "Transmission": {
+      "dtype": "str",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_values": 27
+    },
+    "Fuel Type": {
+      "dtype": "str",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_values": 5
+    },
+    "Fuel Consumption Comb (L/100 km)": {
+      "dtype": "float64",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_values": 181
+    },
+    "CO2 Emissions(g/km)": {
+      "dtype": "int64",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_values": 331
+    }
+  },
+  "duplicates": {
+    "count": 1314,
+    "percentage": 17.79
+  },
+  "target_audit": {
+    "target_column": "CO2 Emissions(g/km)",
+    "target_found": true,
+    "validation_passed": true,
+    "issues": [],
+    "warnings": [],
+    "stats": {
+      "min": 96.0,
+      "max": 522.0,
+      "mean": 250.58,
+      "median": 246.0,
+      "std": 58.51,
+      "q25": 208.0,
+      "q75": 288.0,
+      "iqr": 80.0,
+      "zero_count": 0
+    }
+  },
+  "feature_coverage": {
+    "distance_present": false,
+    "duration_present": false,
+    "vehicle_type_present": true,
+    "fuel_type_present": true,
+    "congestion_present": false
+  },
+  "dataset_ready_for_ml": true,
+  "file_path": "dataset\\raw\\emissions\\CO2_Emissions_Canada.csv",
+  "file_size_kb": 380.6
+}

@@ -1,0 +1,18 @@
+# Ultralytics YOLOv8 Dataset Configuration: RDD2022 Road Damage
+path: C:/Users/Sovin/Desktop/nex2/dataset/processed/road_damage
+train: images/train
+val: images/val
+test: images/test
+
+# Classes
+names:
+  0: D00
+  1: D10
+  2: D20
+  3: D40
+
+# Class descriptions:
+# 0: Longitudinal Crack
+# 1: Transverse Crack
+# 2: Alligator Crack
+# 3: Pothole

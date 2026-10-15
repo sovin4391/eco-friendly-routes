@@ -1,0 +1,71 @@
+{
+  "model_name": "RandomForestRegressor",
+  "regressor_type": "RandomForestRegressor",
+  "target_variable": "CO2 Emissions(g/km)",
+  "target_unit": "g CO2 / km",
+  "training_dataset": "Natural Resources Canada - Vehicle CO2 Emissions (2014-2022)",
+  "features": {
+    "numeric": [
+      "Engine Size(L)",
+      "Cylinders",
+      "Fuel Consumption Comb (L/100 km)"
+    ],
+    "categorical": [
+      "Make",
+      "Vehicle Class",
+      "Transmission",
+      "Fuel Type"
+    ]
+  },
+  "dataset_split_samples": {
+    "train": 5169,
+    "validation": 1108,
+    "test": 1108
+  },
+  "validation_benchmark": {
+    "DummyRegressor (Mean Baseline)": {
+      "validation_metrics": {
+        "mae": 48.0083,
+        "rmse": 59.9354,
+        "mse": 3592.2566,
+        "r2_score": -0.0001
+      },
+      "regressor_class": "DummyRegressor"
+    },
+    "LinearRegression": {
+      "validation_metrics": {
+        "mae": 2.835,
+        "rmse": 4.3267,
+        "mse": 18.7204,
+        "r2_score": 0.9948
+      },
+      "regressor_class": "LinearRegression"
+    },
+    "RandomForestRegressor": {
+      "validation_metrics": {
+        "mae": 1.9078,
+        "rmse": 2.7993,
+        "mse": 7.8361,
+        "r2_score": 0.9978
+      },
+      "regressor_class": "RandomForestRegressor"
+    },
+    "GradientBoostingRegressor": {
+      "validation_metrics": {
+        "mae": 2.4337,
+        "rmse": 3.1387,
+        "mse": 9.8512,
+        "r2_score": 0.9973
+      },
+      "regressor_class": "GradientBoostingRegressor"
+    }
+  },
+  "test_metrics": {
+    "mae": 1.8092,
+    "rmse": 2.6945,
+    "mse": 7.2601,
+    "r2_score": 0.998
+  },
+  "trained_at_utc": "2026-10-14T16:36:26.931288+00:00",
+  "notes": "Model estimates vehicle-level tailpipe CO2 emission rate (g/km). Route-level emissions are calculated as (predicted_rate_g_per_km * distance_km). Congestion multipliers are not asserted as verified scientific factors."
+}
